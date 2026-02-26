@@ -1,0 +1,11 @@
+# Environnement
+.env
+.venv/
+src/api/.venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# VS Code
+.vscode/
