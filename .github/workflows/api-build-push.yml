@@ -1,4 +1,4 @@
-name: API Build and push to ACR
+name: API Build, Push & Deploy
 
 on:
   push:
@@ -13,12 +13,12 @@ env:
   IMAGE_NAME: cloudm2-api
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
 
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
 
@@ -34,19 +34,19 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
 
-      - name: Build and Push Docker image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./src/api
           push: true
           tags: |
             ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-      - name: Deploy to Azure Container Apps
+
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-                
-
+          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
