@@ -1,22 +1,28 @@
-import { useState } from "react";
+// src/App.jsx
+import { useState, useEffect } from "react";
 import CreateJob from "./components/CreateJob";
 import UploadFile from "./components/UploadFile";
+import { healthCheck } from "./services/api";
+import "./App.css";
 
 function App() {
-  const [jobId, setJobId] = useState(null);
-  const [uploadUrl, setUploadUrl] = useState(null);
+  const [job, setJob] = useState(null);
+  const [health, setHealth] = useState("Vérification...");
+
+  useEffect(() => {
+    healthCheck()
+      .then(() => setHealth("API OK"))
+      .catch(() => setHealth("API KO"));
+  }, []);
 
   return (
-    <div style={{ padding: "40px" }}>
-      <h1>Job Upload App</h1>
+    <div className="app">
+      <h1>Job + Upload</h1>
+      <p>Statut API : {health}</p>
 
-      {!jobId && (
-        <CreateJob setJobId={setJobId} setUploadUrl={setUploadUrl} />
-      )}
-
-      {jobId && (
-        <UploadFile uploadUrl={uploadUrl} />
-      )}
+      <CreateJob onJobCreated={setJob} />
+      <hr />
+      <UploadFile job={job} />
     </div>
   );
 }

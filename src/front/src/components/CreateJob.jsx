@@ -1,27 +1,23 @@
 import { useState } from "react";
 import { createJob } from "../services/api";
 
-export default function CreateJob({ setJobId, setUploadUrl }) {
+export default function CreateJob({ onJobCreated }) {
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [file, setFile] = useState(null);
+  const [error, setError] = useState(""); // ← ICI
 
-  const handleCreate = async () => {
-    if (!file) {
-      alert("Sélectionnez un fichier");
-      return;
-    }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
-      setLoading(true);
-
-      const res = await createJob(file.name);
-
-      setJobId(res.data.jobId);
-      setUploadUrl(res.data.uploadUrl);
-
+      const job = await createJob({ name });
+      onJobCreated(job);
+      setName("");
     } catch (err) {
       console.error(err);
-      alert("Erreur création job");
+      setError("Erreur lors de la création du job");
     } finally {
       setLoading(false);
     }
@@ -29,16 +25,21 @@ export default function CreateJob({ setJobId, setUploadUrl }) {
 
   return (
     <div>
-      <h2>Create Job</h2>
+      <h2>Créer un job</h2>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Nom du job"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+        <button type="submit" disabled={loading}>
+          {loading ? "Création..." : "Créer"}
+        </button>
+      </form>
 
-      <input
-        type="file"
-        onChange={(e) => setFile(e.target.files[0])}
-      />
-
-      <button onClick={handleCreate} disabled={loading}>
-        {loading ? "Creating..." : "Create Job"}
-      </button>
+      {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
 }
