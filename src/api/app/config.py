@@ -1,13 +1,14 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(case_sensitive=False)
+    
 
-    cosmos_endpoint: str
-    cosmos_key: str
-    cosmos_database: str = "db-doc"
-    cosmos_container: str = "jobs"
-    blob_connection_string: str
-    blob_container: str
-
+    COSMOS_ENDPOINT: str
+    COSMOS_KEY: str
+    COSMOS_DATABASE: str = "db-doc"
+    COSMOS_CONTAINER: str = "jobs"
+    BLOB_CONNECTION_STRING: str
+    BLOB_CONTAINER: str
+    
+model_config = SettingsConfigDict(case_sensitive=False)
 settings = Settings()

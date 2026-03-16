@@ -4,7 +4,7 @@ from .routes_jobs import router as jobs_router
 
 app = FastAPI()
 
-# 🔥 AJOUTE CECI
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
