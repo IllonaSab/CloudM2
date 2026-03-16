@@ -10,11 +10,11 @@ def get_cosmos_container():
 
     if _container is None:
         _client = CosmosClient(
-            settings.COSMOS_ENDPOINT,
-            credential=settings.COSMOS_KEY
+            settings.cosmos_endpoint,
+            credential=settings.cosmos_key
         )
 
-        database = _client.get_database_client(settings.COSMOS_DATABASE)
-        _container = database.get_container_client(settings.COSMOS_CONTAINER)
+        database = _client.get_database_client(settings.cosmos_database)
+        _container = database.get_container_client(settings.cosmos_container)
 
     return _container
