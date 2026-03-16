@@ -41,7 +41,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
-            images: ${{ secrets.ACR_LOGIN_SERVER }}/cloudm2-api:${{ github.sha }}
+            ${{ secrets.ACR_LOGIN_SERVER }}/cloudm2-api:${{ github.sha }}
 
 
       - name: Deploy to Azure Web App
