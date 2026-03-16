@@ -9,16 +9,12 @@ def get_cosmos_container():
     global _client, _container
 
     if _container is None:
-        # création du client Cosmos
         _client = CosmosClient(
             settings.COSMOS_ENDPOINT,
             credential=settings.COSMOS_KEY
         )
 
-        # récupération de la base
         database = _client.get_database_client(settings.COSMOS_DATABASE)
-
-        # récupération du container
         _container = database.get_container_client(settings.COSMOS_CONTAINER)
 
     return _container
