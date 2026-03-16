@@ -1,3 +1,4 @@
+# Build React
 FROM node:20-alpine as build
 
 WORKDIR /app
