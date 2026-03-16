@@ -4,6 +4,7 @@ from .config import settings
 _client = None
 _container = None
 
+
 def get_cosmos_container():
     global _client, _container
 
