@@ -1,13 +1,23 @@
 from azure.cosmos import CosmosClient
 from .config import settings
 
-_client: CosmosClient | None = None
+_client = None
+_container = None
 
 def get_cosmos_container():
-    global _client
-    if _client is None:
-        _client = CosmosClient(settings.cosmos_endpoint, credential=settings.cosmos_key)
-    
-    db = _client.get_database_client(settings.cosmos_database)
-    container = db.get_container_client(settings.cosmos_container)
-    return container
+    global _client, _container
+
+    if _container is None:
+        # création du client Cosmos
+        _client = CosmosClient(
+            settings.COSMOS_ENDPOINT,
+            credential=settings.COSMOS_KEY
+        )
+
+        # récupération de la base
+        database = _client.get_database_client(settings.COSMOS_DATABASE)
+
+        # récupération du container
+        _container = database.get_container_client(settings.COSMOS_CONTAINER)
+
+    return _container
