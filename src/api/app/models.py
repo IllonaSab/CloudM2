@@ -15,6 +15,7 @@ class JobCreateResponse(BaseModel):
     status: str
     createdAt: str
     uploadUrl: str
+    category: str
 
 def job_to_entity(req:JobCreateRequest) -> Dict[str, Any]:
     job_id = str(uuid.uuid4())
@@ -23,6 +24,7 @@ def job_to_entity(req:JobCreateRequest) -> Dict[str, Any]:
         "id": job_id,
         "pk": "JOB",
         "status": "CREATED",
+        "category": "",
         "fileName": req.fileName,
         "contentType": req.contentType,
         "createdAt": ts,
