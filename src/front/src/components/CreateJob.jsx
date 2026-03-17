@@ -1,45 +1,41 @@
 import { useState } from "react";
 import { createJob } from "../services/api";
 
-export default function CreateJob({ onJobCreated }) {
-  const [name, setName] = useState("");
+export default function CreateJob({ setUploadUrl }) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(""); // ← ICI
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleCreate = async () => {
     setLoading(true);
-    setError("");
 
     try {
-      const job = await createJob({ name });
-      onJobCreated(job);
-      setName("");
+      const res = await createJob();
+
+      console.log("FULL RESPONSE:", res);       // 🔥
+      console.log("DATA:", res.data);           // 🔥
+      console.log("UPLOAD URL:", res.data?.uploadUrl); // 🔥
+
+      const url = res.data?.uploadUrl;
+
+      if (!url) {
+        alert("uploadUrl backend manquant ❌");
+        return;
+      }
+
+      setUploadUrl(url);
+
     } catch (err) {
       console.error(err);
-      setError("Erreur lors de la création du job");
-    } finally {
-      setLoading(false);
+      alert("Erreur création job");
     }
+
+    setLoading(false);
   };
 
   return (
     <div>
-      <h2>Créer un job</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Nom du job"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? "Création..." : "Créer"}
-        </button>
-      </form>
-
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      <button onClick={handleCreate} disabled={loading}>
+        {loading ? "Creating..." : "Create Job"}
+      </button>
     </div>
   );
 }
