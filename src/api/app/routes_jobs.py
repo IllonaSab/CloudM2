@@ -46,3 +46,11 @@ def get_job(job_id: str):
             status_code=500,
             detail=f"Cosmos error: {getattr(e, 'message', str(e))}"
         )
+    
+@router.put("/jobs/{job_id}/status")
+def update_status(job_id: str, new_status: str):
+    container = get_cosmos_container()
+    item = container.read_item(item=job_id, partition_key="JOB")
+    item["status"] = new_status
+    container.upsert_item(item)
+    return item
