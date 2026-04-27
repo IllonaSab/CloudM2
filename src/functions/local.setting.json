@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "BLOB_CONNECTION_STRING": "<TA_BLOB_CONNECTION_STRING>",
+    "COSMOS_ENDPOINT": "https://doc-db-is.documents.azure.com:443/",
+    "COSMOS_KEY": "<TA_COSMOS_KEY>",
+    "COSMOS_DATABASE": "db-doc",
+    "COSMOS_CONTAINER": "jobs"
+  }
+}
