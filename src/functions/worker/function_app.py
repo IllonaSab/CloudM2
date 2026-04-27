@@ -10,7 +10,8 @@ def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 @app.blob_trigger(arg_name="myblob", path="doc-storage/{name}",
-                  connection="BLOB_CONNECTION_STRING")
+                  connection="docstorageis_STORAGE")
+
 def WorkerFile(myblob: func.InputStream):
     logging.info(f"Processing blob: {myblob.name}, Size: {myblob.length} bytes")
 
