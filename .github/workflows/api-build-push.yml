@@ -23,7 +23,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./api
+          context: ./src/api
           push: true
           tags: cloudm2acr.azurecr.io/app-doc-is:latest
 
