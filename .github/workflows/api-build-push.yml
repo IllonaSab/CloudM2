@@ -32,6 +32,16 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Configure ACR credentials on App Service
+        run: |
+          az webapp config container set \
+            --name app-doc-is \
+            --resource-group doc-dynamic \
+            --container-image-name cloudm2acr.azurecr.io/app-doc-is:latest \
+            --container-registry-url https://cloudm2acr.azurecr.io \
+            --container-registry-user ${{ secrets.ACR_USERNAME }} \
+            --container-registry-password ${{ secrets.ACR_PASSWORD }}
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
