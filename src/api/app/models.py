@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 import uuid
 
 def now_iso() -> str:
@@ -17,7 +17,19 @@ class JobCreateResponse(BaseModel):
     uploadUrl: str
     category: str
 
-def job_to_entity(req:JobCreateRequest) -> Dict[str, Any]:
+class Job(BaseModel):
+    id: str
+    pk: str
+    status: str
+    category: str
+    fileName: str
+    contentType: str
+    createdAt: str
+    updatedAt: str
+    resultSummary: str | None
+    error: str | None
+
+def job_to_entity(req: JobCreateRequest) -> Dict[str, Any]:
     job_id = str(uuid.uuid4())
     ts = now_iso()
     return {
@@ -32,4 +44,3 @@ def job_to_entity(req:JobCreateRequest) -> Dict[str, Any]:
         "resultSummary": None,
         "error": None
     }
-
