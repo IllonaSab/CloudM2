@@ -1,23 +1,97 @@
 import azure.functions as func
 import logging
-from azure.cosmos import CosmosClient
+import json
 import os
 from datetime import datetime, timezone
+from azure.servicebus import ServiceBusClient, ServiceBusMessage
+from azure.cosmos import CosmosClient, exceptions
 
 app = func.FunctionApp()
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
-@app.blob_trigger(arg_name="myblob", path="doc-storage/{name}",
-                  connection="docstorageis_STORAGE")
+# ─────────────────────────────────────────
+# FUNCTION 1 — Blob Trigger → Service Bus
+# ─────────────────────────────────────────
+@app.blob_trigger(
+    arg_name="myblob",
+    path="doc-storage/input/{name}",
+    connection="docstorageis_STORAGE"
+)
+def BlobToServiceBus(myblob: func.InputStream):
+    blob_name = myblob.name  # input/123_cv_amine_azure.pdf
+    file_part = blob_name.split("/")[-1]  # 123_cv_amine_azure.pdf
 
-def WorkerFile(myblob: func.InputStream):
-    logging.info(f"Processing blob: {myblob.name}, Size: {myblob.length} bytes")
+    # Parse documentId et fileName
+    parts = file_part.split("_", 1)
+    document_id = parts[0] if len(parts) >= 2 else file_part
+    file_name = parts[1] if len(parts) >= 2 else file_part
 
-    job_id = myblob.name.split("/")[-1]
-    blob_bytes = myblob.read()
-    blob_size = len(blob_bytes)
+    message = {
+        "documentId": document_id,
+        "fileName": file_name,
+        "blobName": blob_name,
+        "size": myblob.length,
+        "uploadedAt": now_iso()
+    }
+
+    logging.info(f"[Function1] Blob reçu: {blob_name} → envoi au Service Bus")
+
+    conn_str = os.environ["SERVICE_BUS_CONNECTION_STRING"]
+    queue_name = os.environ["SERVICE_BUS_QUEUE_NAME"]
+
+    with ServiceBusClient.from_connection_string(conn_str) as client:
+        with client.get_queue_sender(queue_name) as sender:
+            sender.send_messages(ServiceBusMessage(json.dumps(message)))
+
+    logging.info(f"[Function1] Message envoyé pour documentId={document_id}")
+
+
+# ─────────────────────────────────────────
+# FUNCTION 2 — Service Bus → Cosmos DB
+# ─────────────────────────────────────────
+def generate_tags(file_name: str, size: int) -> list:
+    name_lower = file_name.lower()
+    tags = []
+
+    # Extension
+    if name_lower.endswith(".pdf"):
+        tags += ["pdf", "document"]
+    elif name_lower.endswith(".docx"):
+        tags += ["word", "document"]
+    elif name_lower.endswith(".png"):
+        tags += ["image"]
+
+    # Mots-clés
+    keywords = {
+        "cv": ["cv", "rh"],
+        "facture": ["facture", "comptabilite"],
+        "contrat": ["contrat", "administratif"],
+        "azure": ["azure", "cloud"],
+        "docker": ["docker", "devops"],
+    }
+    for keyword, keyword_tags in keywords.items():
+        if keyword in name_lower:
+            tags += keyword_tags
+
+    return list(set(tags))
+
+
+@app.service_bus_queue_trigger(
+    arg_name="msg",
+    queue_name="%SERVICE_BUS_QUEUE_NAME%",
+    connection="SERVICE_BUS_CONNECTION_STRING"
+)
+def ServiceBusTagger(msg: func.ServiceBusMessage):
+    body = msg.get_body().decode("utf-8")
+    data = json.loads(body)
+
+    document_id = data["documentId"]
+    file_name = data["fileName"]
+    size = data.get("size", 0)
+
+    logging.info(f"[Function2] Message reçu pour documentId={document_id}")
 
     cosmos_client = CosmosClient(
         url=os.environ["COSMOS_ENDPOINT"],
@@ -26,36 +100,36 @@ def WorkerFile(myblob: func.InputStream):
     db = cosmos_client.get_database_client(os.environ["COSMOS_DATABASE"])
     container = db.get_container_client(os.environ["COSMOS_CONTAINER"])
 
-    try:
-        job = container.read_item(item=job_id, partition_key="JOB")
-
-        file_name = (job.get("fileName") or "").lower()
-        content_type = (job.get("contentType") or "").lower()
-
-        if "pdf" in content_type or file_name.endswith(".pdf"):
-            category = "pdf"
-        elif content_type.startswith("image/"):
-            category = "image"
-        elif content_type.startswith("text/"):
-            category = "text"
-        else:
-            category = "binary"
-
-        job["category"] = category
-        job["resultSummary"] = f"{category}:{blob_size} bytes"
-        job["status"] = "DONE"
-        job["error"] = None
-        job["updatedAt"] = now_iso()
-
-        container.replace_item(job_id, job)
-        logging.info(f"Job {job_id} updated to DONE")
-
-    except Exception as e:
-        logging.error(f"Error processing job {job_id}: {e}")
+    # Fichier vide
+    if size == 0:
+        logging.warning(f"[Function2] Fichier vide → ERROR")
         try:
+            job = container.read_item(item=document_id, partition_key="JOB")
             job["status"] = "ERROR"
-            job["error"] = str(e)
+            job["error"] = "Fichier vide"
             job["updatedAt"] = now_iso()
-            container.replace_item(job_id, job)
-        except:
+            container.replace_item(document_id, job)
+        except Exception:
             pass
+        return
+
+    # Chercher le document dans Cosmos
+    try:
+        job = container.read_item(item=document_id, partition_key="JOB")
+    except exceptions.CosmosResourceNotFoundError:
+        logging.error(f"[Function2] Document {document_id} introuvable → ERROR")
+        return
+
+    # Générer les tags
+    tags = generate_tags(file_name, size)
+
+    # Mettre à jour Cosmos
+    job["status"] = "PROCESSED"
+    job["tags"] = tags
+    job["fileName"] = file_name
+    job["processedAt"] = now_iso()
+    job["updatedAt"] = now_iso()
+    job.pop("error", None)
+
+    container.replace_item(document_id, job)
+    logging.info(f"[Function2] Document {document_id} → PROCESSED, tags={tags}")
