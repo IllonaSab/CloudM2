@@ -19,7 +19,11 @@ export default function App() {
     setStatus("processing");
     const poll = setInterval(async () => {
       const r = await api.get(`/jobs/${jobId}`);
-      if (r.data.status === "DONE") { setJob(r.data); setStatus("done"); clearInterval(poll); }
+      if (r.data.status === "DONE" || r.data.status === "PROCESSED" || r.data.status === "ERROR") {
+        setJob(r.data);
+        setStatus("done");
+        clearInterval(poll);
+      }
     }, 1500);
   };
 
@@ -34,6 +38,7 @@ export default function App() {
       {status === "processing" && <p>Traitement...</p>}
       {status === "done" && <>
         <p>✅ Terminé !</p>
+        <p>Statut : {job?.status}</p>
         <p>Catégorie : {job?.category}</p>
         <p>Résumé : {job?.resultSummary}</p>
         <button onClick={() => { setStatus("idle"); setFile(null); setJob(null); }}>Recommencer</button>
